@@ -10,9 +10,58 @@ let playlist; //playlist meta data for all segements within the HLS video
 let destroyEventHandler; //ensures that we don't register the destroy event twice
 let stuckStuck = 0; // check if the player gets stuck
 let lastCurrentTime = 0; // last time when the player got stuck
+let errorStrike = false;
 let breakages = {};
 let currentSource = "";
-let brokenSentinel = 0;
+let maxErrorss = 10;
+let onLiveError = false; //optional handler passed in by user to handle live broadcast errors
+
+const handleLiveHlsFailure = () => {
+	if(retryCount>=4) {	// 5 errors within 10 seconds
+		// console.log('die');
+	}
+	// If time has progressed since last failure, retry
+	else if(lastBrokeAt!=lastCurrentTime) {
+		retry(retryCount*1000);
+		errorStrike=1;
+	}
+	// If time hasn't progressed, retry once, but also delay for 3 seconds to increase likelihood of success
+	else if(errorStrike<2) {
+		console.log('no progress recover');
+		retry(3000);
+		errorStrike=2;
+	}
+	// 3 errors without progressing
+	else {
+		console.log('die');
+	}
+};
+
+const handleHlsFailure = (player, url) => {
+	let hls = player.tech_.hls;
+	if (hls) {
+		playlist = hls.playlists.media();
+	}
+	if (playlist.segments) {
+		if (lastBrokeAt === false) {
+			lastBrokeAt = recordedTime;
+		}
+		if (lastBrokeAt !== false) {
+			brokeStart = Math.floor(lastBrokeAt);
+		} else {
+			brokeStart = Math.floor(recordedTime);
+		}
+		if (!breakages[url]) {
+			breakages[url] = {};
+		}
+		var segmentToSkip = Math.ceil(recordedTime);
+		if (segmentToSkip % 2 !== 0) {
+			segmentToSkip += 1;
+		}
+		breakages[url][brokeStart] = playlist.segments[(segmentToSkip / playlist.targetDuration) > 0 ? (segmentToSkip / playlist.targetDuration) - 1 : (segmentToSkip / playlist.targetDuration) ].duration + segmentToSkip + 0.1;
+		reload(url, player);
+	}
+}
 
 const checkForBreakage = (player) => {
   //needs url
@@ -36,6 +85,23 @@ const reload = (src, player) => {
 	player.src({src: src, type: 'application/x-mpegURL'});
 }
 
+const retry = (delay, player) => {
+	retryCount++;
+	// console.log(errorCount+": "+window.location.search.substring(1)+' videotime:'+lastCurrentTime+" pagetime:"+((new Date().getTime()-startTime)/1000));
+	setTimeout(() => {
+		if(onLiveError) {
+			onLiveError();
+		} else {
+			reload(currentSource, player);
+		}
+		// After 10 seconds, error count is brought back down
+		window.setTimeout(function(){
+			retryCount--;
+		}, 10000);
+	}, delay>0 ? delay : 0);
+};
+
+
 /**
  * Function to invoke when the player is ready.
  *
@@ -58,9 +124,13 @@ const onPlayerReady = (player, options) => {
     	if (player.paused() && player.currentTime() === lastCurrentTime) {
     		stuckStuck++;
     		if (stuckStuck >= 5) {
-    			var skipTo = ((Math.floor(player.currentTime() / 2) + 1) * 2) + 0.1; // skip to next segment + 100ms buffer
-    			player.currentTime(skipTo);
-    			stuckStuck = 0;
+					if(player.duration() === Infinity) {
+						retry(0, player);
+					} else {
+						let skipTo = ((Math.floor(player.currentTime() / 2) + 1) * 2) + 0.1; // skip to next segment + 100ms buffer
+						player.currentTime(skipTo);
+						stuckStuck = 0;
+					}
     		}
     	} else {
     		stuckStuck = 0;
@@ -71,37 +141,16 @@ const onPlayerReady = (player, options) => {
   });
 
   player.on('error', () => {
-    brokenSentinel++;
-  	if (player && player.currentType_ === 'application/x-mpegURL' && brokenSentinel <= 10) {
+    maxErrors++;
+  	if (player && player.currentType_ === 'application/x-mpegURL' && maxErrors <= 10) {
   		let url = currentSource;
   		let brokeStart;
   		clearTimeout(clearLastBrokeAt);
   		clearLastBrokeAt = false;
-  		let hls = player.tech_.hls;
-  		if (hls) {
-  			playlist = hls.playlists.media();
-  		}
-  		if (playlist.segments) {
-  			if (lastBrokeAt === false) {
-  				lastBrokeAt = recordedTime;
-  			}
-  			if (lastBrokeAt !== false) {
-  				brokeStart = Math.floor(lastBrokeAt);
-  			} else {
-  				brokeStart = Math.floor(recordedTime);
-  			}
-  			if (!breakages[url]) {
-  				breakages[url] = {};
-  			}
-  			var segmentToSkip = Math.ceil(recordedTime);
-  			if (segmentToSkip % 2 !== 0) {
-  				segmentToSkip += 1;
-  			}
-  			breakages[url][brokeStart] = playlist.segments[(segmentToSkip / playlist.targetDuration) > 0 ? (segmentToSkip / playlist.targetDuration) - 1 : (segmentToSkip / playlist.targetDuration) ].duration + segmentToSkip + 0.1;
-  			reload(url, player);
-  		}
-			else {
-  			console.warn('No segments');
+			if(player.duration() === Infinity) {
+					handleLiveHlsFailure()
+			} else {
+	  			handleHlsFailure(player, url)
   		}
 		}
   });
@@ -118,17 +167,20 @@ const onPlayerReady = (player, options) => {
  *
  * @function skippy
  * @param    {Object} [options={}]
- * @param    {Number} [brokenSentinel=Number]
+ * @param    {Number} [maxErrors=Number]
  *
- *           brokenSentinel defines the amount of times the player is allowed to fail, optionally set to 10
+ *           maxErrors defines the amount of times the player is allowed to fail, optionally set to 10
  */
 const skippy = function(options) {
   this.ready(() => {
 		if(!options) {
 			options = {};
 		}
-		if(options.brokenSentinel) {
-			brokenSentinel = options.brokenSentinel;
+		if(options.maxErrors) {
+			maxErrors = options.maxErrors;
+		}
+		if(options.onLiveError) {
+			onLiveError = options.onLiveError;
 		}
     onPlayerReady(this, videojs.mergeOptions(defaults, options));
   });
