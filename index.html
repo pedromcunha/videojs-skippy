@@ -7,14 +7,16 @@
 </head>
 <body>
   <video id="videojs-skippy-player" class="video-js vjs-default-skin" controls>
-    <source src="//vjs.zencdn.net/v/oceans.mp4" type='video/mp4'>
-    <source src="//vjs.zencdn.net/v/oceans.webm" type='video/webm'>
+    <!-- <source src="//vjs.zencdn.net/v/oceans.mp4" type='video/mp4'> -->
+    <!-- <source src="//vjs.zencdn.net/v/oceans.webm" type='video/webm'> -->
+    <source src="https://hls.younow.com/hlsarchives/live/4b/07/110842838/playlist.m3u8" type="application/x-mpegURL">
   </video>
   <ul>
     <li><a href="/test/">Run unit tests in browser.</a></li>
     <li><a href="/docs/api/">Read generated docs.</a></li>
   </ul>
   <script src="/node_modules/video.js/dist/video.js"></script>
+  <script src="/node_modules/videojs-contrib-hls/dist/videojs-contrib-hls.js"></script>
   <script src="/dist/videojs-skippy.js"></script>
   <script>
     (function(window, videojs) {
