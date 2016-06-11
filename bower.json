@@ -1,0 +1,13 @@
+{
+  "name": "videojs-skippy",
+  "author": "Pedro &lt;pedro@younow.com&gt;",
+  "license": "MIT",
+  "main": [
+    "dist/videojs-skippy.min.js"
+  ],
+  "keywords": [
+    "videojs",
+    "videojs-plugin"
+  ]
+}
+
