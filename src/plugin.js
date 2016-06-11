@@ -11,11 +11,12 @@ let brokenSentinel = 0; //maxes the amount of breaks we allow for a video (if it
 let destroyEventHandler; //ensures that we don't register the destroy event twice
 let stuckStuck = 0; // check if the player gets stuck
 let lastCurrentTime = 0; // last time when the player got stuck
-let breakages = [];
+let breakages = {};
+let currentSource = "";
 
 const checkForBreakage = (player) => {
   //needs url
-	var breakHistory = breakages[player.src()];
+	var breakHistory = breakages[currentSource];
 	let checkThisTime = Math.floor(recordedTime);
 	//if there's breakage at this time go ahead of it to the designated time
 	if (breakHistory && breakHistory[checkThisTime]) {
@@ -27,6 +28,12 @@ const checkForBreakage = (player) => {
 			lastBrokeAt = false;
 		}, 500);
 	}
+}
+
+//in case the player goes crazy, we can reload it manually in a last ditch effort to play the video
+const reload = (src, player) => {
+	player.reset();
+	player.src({src: src, type: 'application/x-mpegURL'});
 }
 
 /**
@@ -42,6 +49,7 @@ const checkForBreakage = (player) => {
  */
 const onPlayerReady = (player, options) => {
   player.addClass('vjs-skippy');
+	currentSource = player.el_.children[0].children[0].src;
   player.on('timeupdate', (e) => {
     if(player) {
     	if (!lastBrokeAt && player.currentTime) {
@@ -60,6 +68,42 @@ const onPlayerReady = (player, options) => {
     	lastCurrentTime = player.currentTime();
     	checkForBreakage(player);
     }
+  });
+
+  player.on('error', () => {
+    brokenSentinel++;
+  	if (player && player.currentType_ === 'application/x-mpegURL' && brokenSentinel <= 10) {
+  		let url = currentSource;
+  		let brokeStart;
+  		clearTimeout(clearLastBrokeAt);
+  		clearLastBrokeAt = false;
+  		let hls = player.tech_.hls;
+  		if (hls) {
+  			playlist = hls.playlists.media();
+  		}
+  		if (playlist.segments) {
+  			if (lastBrokeAt === false) {
+  				lastBrokeAt = recordedTime;
+  			}
+  			if (lastBrokeAt !== false) {
+  				brokeStart = Math.floor(lastBrokeAt);
+  			} else {
+  				brokeStart = Math.floor(recordedTime);
+  			}
+  			if (!breakages[url]) {
+  				breakages[url] = {};
+  			}
+  			var segmentToSkip = Math.ceil(recordedTime);
+  			if (segmentToSkip % 2 !== 0) {
+  				segmentToSkip += 1;
+  			}
+  			breakages[url][brokeStart] = playlist.segments[(segmentToSkip / playlist.targetDuration) > 0 ? (segmentToSkip / playlist.targetDuration) - 1 : (segmentToSkip / playlist.targetDuration) ].duration + segmentToSkip + 0.1;
+  			reload(url, player);
+  		}
+			else {
+  			console.warn('No segments');
+  		}
+		}
   });
 
 };
@@ -86,6 +130,6 @@ const skippy = function(options) {
 videojs.plugin('skippy', skippy);
 
 // Include the version number.
-skippy.VERSION = '0.0.1';
+skippy.VERSION = '__VERSION__';
 
 export default skippy;
