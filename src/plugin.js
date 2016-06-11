@@ -7,12 +7,12 @@ let recordedTime = 0;
 let lastBrokeAt = false; //the last point of where the player broke, cleared at point of success
 let clearLastBrokeAt = false; //timeout that clears out the lastBrokeAt variable when playback continues without interruption
 let playlist; //playlist meta data for all segements within the HLS video
-let brokenSentinel = 0; //maxes the amount of breaks we allow for a video (if it's too high we dont want to go into an infite loop)
 let destroyEventHandler; //ensures that we don't register the destroy event twice
 let stuckStuck = 0; // check if the player gets stuck
 let lastCurrentTime = 0; // last time when the player got stuck
 let breakages = {};
 let currentSource = "";
+let brokenSentinel = 0;
 
 const checkForBreakage = (player) => {
   //needs url
@@ -118,10 +118,18 @@ const onPlayerReady = (player, options) => {
  *
  * @function skippy
  * @param    {Object} [options={}]
- *           An object of options left to the plugin author to define.
+ * @param    {Number} [brokenSentinel=Number]
+ *
+ *           brokenSentinel defines the amount of times the player is allowed to fail, optionally set to 10
  */
 const skippy = function(options) {
   this.ready(() => {
+		if(!options) {
+			options = {};
+		}
+		if(options.brokenSentinel) {
+			brokenSentinel = options.brokenSentinel;
+		}
     onPlayerReady(this, videojs.mergeOptions(defaults, options));
   });
 };
