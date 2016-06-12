@@ -168,8 +168,8 @@ const onPlayerReady = (player, options) => {
  *
  * @function skippy
  * @param    {Object} [options={}]
- * @param    {Number}
- * @param    {Function}
+ * @param    {Number} [maxErrors]
+ * @param    {Function} [onLiveError]
  *
  *           maxErrors defines the amount of times the player is allowed to fail, optionally set to 10
  */
