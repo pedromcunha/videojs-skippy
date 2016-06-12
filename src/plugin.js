@@ -13,7 +13,8 @@ let lastCurrentTime = 0; // last time when the player got stuck
 let errorStrike = false;
 let breakages = {};
 let currentSource = "";
-let maxErrorss = 10;
+let errorSentinel = 0;
+let maxErrors = 10; //optional value passed in by user for max amount of errors sentinel has to watch out for
 let onLiveError = false; //optional handler passed in by user to handle live broadcast errors
 
 const handleLiveHlsFailure = () => {
@@ -38,6 +39,7 @@ const handleLiveHlsFailure = () => {
 };
 
 const handleHlsFailure = (player, url) => {
+	let brokeStart;
 	let hls = player.tech_.hls;
 	if (hls) {
 		playlist = hls.playlists.media();
@@ -141,10 +143,9 @@ const onPlayerReady = (player, options) => {
   });
 
   player.on('error', () => {
-    maxErrors++;
-  	if (player && player.currentType_ === 'application/x-mpegURL' && maxErrors <= 10) {
+    errorSentinel++;
+  	if (player && player.currentType_ === 'application/x-mpegURL' && errorSentinel <= maxErrors) {
   		let url = currentSource;
-  		let brokeStart;
   		clearTimeout(clearLastBrokeAt);
   		clearLastBrokeAt = false;
 			if(player.duration() === Infinity) {
@@ -167,7 +168,8 @@ const onPlayerReady = (player, options) => {
  *
  * @function skippy
  * @param    {Object} [options={}]
- * @param    {Number} [maxErrors=Number]
+ * @param    {Number}
+ * @param    {Function}
  *
  *           maxErrors defines the amount of times the player is allowed to fail, optionally set to 10
  */
