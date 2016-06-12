@@ -22,8 +22,9 @@ bower install  --save videojs-skippy
 
 The options you can pass in are limited to:
 
-*maxErrors* The max amount of errors before the player stops trying to skip segments. (defaults to 10)
-*onLiveError* A callback function in the case of an error on a live HLS stream. (defaults to noop)
+*maxErrors* The max amount of errors before the player stops trying to skip segments. (defaults to 10)  
+
+*onLiveError* A callback function in the case of an error on a live HLS stream. (defaults to noop)  
 
 To include videojs-skippy on your website or web application, use any of the following methods.
 
