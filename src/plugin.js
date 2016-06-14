@@ -18,19 +18,19 @@ let maxErrors = 10; //optional value passed in by user for max amount of errors 
 let onLiveError = false; //optional handler passed in by user to handle live broadcast errors
 let retryCount = 0; //this is so that the retry handler has time to cooldown
 
-const handleLiveHlsFailure = () => {
+const handleLiveHlsFailure = (player) => {
 	if(retryCount>=4) {	// 5 errors within 10 seconds
 		// console.log('die');
 	}
 	// If time has progressed since last failure, retry
 	else if(lastBrokeAt!=lastCurrentTime) {
-		retry(retryCount*1000);
+		retry(retryCount*1000, player);
 		errorStrike=1;
 	}
 	// If time hasn't progressed, retry once, but also delay for 3 seconds to increase likelihood of success
 	else if(errorStrike<2) {
 		console.log('no progress recover');
-		retry(3000);
+		retry(3000, player);
 		errorStrike=2;
 	}
 	// 3 errors without progressing
@@ -127,6 +127,7 @@ const onPlayerReady = (player, options) => {
     	if (player.paused() && player.currentTime() === lastCurrentTime) {
     		stuckStuck++;
     		if (stuckStuck >= 5) {
+					console.log("dang we're stuck: " stuckStuck);
 					if(player.duration() === Infinity) {
 						retry(0, player);
 					} else {
@@ -150,7 +151,7 @@ const onPlayerReady = (player, options) => {
   		clearTimeout(clearLastBrokeAt);
   		clearLastBrokeAt = false;
 			if(player.duration() === Infinity) {
-					handleLiveHlsFailure()
+					handleLiveHlsFailure(player)
 			} else {
 	  			handleHlsFailure(player, url)
   		}
