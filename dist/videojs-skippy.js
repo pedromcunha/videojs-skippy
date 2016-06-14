@@ -37,7 +37,6 @@ var onLiveError = false; //optional handler passed in by user to handle live bro
 
 var handleLiveHlsFailure = function handleLiveHlsFailure() {
 	if (retryCount >= 4) {} // 5 errors within 10 seconds
-	// console.log('die');
 
 	// If time has progressed since last failure, retry
 	else if (lastBrokeAt != lastCurrentTime) {
@@ -46,14 +45,11 @@ var handleLiveHlsFailure = function handleLiveHlsFailure() {
 		}
 		// If time hasn't progressed, retry once, but also delay for 3 seconds to increase likelihood of success
 		else if (errorStrike < 2) {
-				console.log('no progress recover');
 				retry(3000);
 				errorStrike = 2;
 			}
 			// 3 errors without progressing
-			else {
-					console.log('die');
-				}
+			else {}
 };
 
 var handleHlsFailure = function handleHlsFailure(player, url) {
@@ -107,7 +103,6 @@ var reload = function reload(src, player) {
 
 var retry = function retry(delay, player) {
 	retryCount++;
-	// console.log(errorCount+": "+window.location.search.substring(1)+' videotime:'+lastCurrentTime+" pagetime:"+((new Date().getTime()-startTime)/1000));
 	setTimeout(function () {
 		if (onLiveError) {
 			onLiveError();
