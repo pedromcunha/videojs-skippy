@@ -30,26 +30,31 @@ var stuckStuck = 0; // check if the player gets stuck
 var lastCurrentTime = 0; // last time when the player got stuck
 var errorStrike = false;
 var breakages = {};
-var currentSource = "";
-var errorSentinel = 0;
+var currentSource = ""; //Keeping track of the source
+var errorSentinel = 0; //prevents us from infinite looping, can be customizable
 var maxErrors = 10; //optional value passed in by user for max amount of errors sentinel has to watch out for
 var onLiveError = false; //optional handler passed in by user to handle live broadcast errors
+var retryCount = 0; //this is so that the retry handler has time to cooldown
 
-var handleLiveHlsFailure = function handleLiveHlsFailure() {
+var handleLiveHlsFailure = function handleLiveHlsFailure(player) {
 	if (retryCount >= 4) {} // 5 errors within 10 seconds
+	// console.log('die');
 
 	// If time has progressed since last failure, retry
 	else if (lastBrokeAt != lastCurrentTime) {
-			retry(retryCount * 1000);
+			retry(retryCount * 1000, player);
 			errorStrike = 1;
 		}
 		// If time hasn't progressed, retry once, but also delay for 3 seconds to increase likelihood of success
 		else if (errorStrike < 2) {
-				retry(3000);
+				console.log('no progress recover');
+				retry(3000, player);
 				errorStrike = 2;
 			}
 			// 3 errors without progressing
-			else {}
+			else {
+					console.log('die');
+				}
 };
 
 var handleHlsFailure = function handleHlsFailure(player, url) {
@@ -103,6 +108,7 @@ var reload = function reload(src, player) {
 
 var retry = function retry(delay, player) {
 	retryCount++;
+	// console.log(errorCount+": "+window.location.search.substring(1)+' videotime:'+lastCurrentTime+" pagetime:"+((new Date().getTime()-startTime)/1000));
 	setTimeout(function () {
 		if (onLiveError) {
 			onLiveError();
@@ -138,6 +144,7 @@ var onPlayerReady = function onPlayerReady(player, options) {
 			if (player.paused() && player.currentTime() === lastCurrentTime) {
 				stuckStuck++;
 				if (stuckStuck >= 5) {
+					// console.log("dang we're stuck: " stuckStuck);
 					if (player.duration() === Infinity) {
 						retry(0, player);
 					} else {
@@ -161,7 +168,7 @@ var onPlayerReady = function onPlayerReady(player, options) {
 			clearTimeout(clearLastBrokeAt);
 			clearLastBrokeAt = false;
 			if (player.duration() === Infinity) {
-				handleLiveHlsFailure();
+				handleLiveHlsFailure(player);
 			} else {
 				handleHlsFailure(player, url);
 			}
