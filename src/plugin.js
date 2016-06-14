@@ -12,10 +12,11 @@ let stuckStuck = 0; // check if the player gets stuck
 let lastCurrentTime = 0; // last time when the player got stuck
 let errorStrike = false;
 let breakages = {};
-let currentSource = "";
-let errorSentinel = 0;
+let currentSource = ""; //Keeping track of the source
+let errorSentinel = 0; //prevents us from infinite looping, can be customizable
 let maxErrors = 10; //optional value passed in by user for max amount of errors sentinel has to watch out for
 let onLiveError = false; //optional handler passed in by user to handle live broadcast errors
+let retryCount = 0; //this is so that the retry handler has time to cooldown
 
 const handleLiveHlsFailure = () => {
 	if(retryCount>=4) {	// 5 errors within 10 seconds
