@@ -197,6 +197,9 @@ const skippy = function(options) {
 		if(options.onLiveError) {
 			onLiveError = options.onLiveError;
 		}
+		if(options.debug) {
+			debug = options.debug;
+		}
     onPlayerReady(this, videojs.mergeOptions(defaults, options));
   });
 };
