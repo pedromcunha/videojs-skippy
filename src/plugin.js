@@ -135,7 +135,7 @@ const onPlayerReady = (player, options) => {
     	if (player.paused() && player.currentTime() === lastCurrentTime) {
     		stuckStuck++;
     		if (stuckStuck >= 5) {
-					logger("Stuckstuck enabled: " stuckStuck);
+					logger("Stuckstuck enabled: " + stuckStuck);
 					if(player.duration() === Infinity) {
 						retry(0, player);
 					} else {
