@@ -88,6 +88,7 @@ const checkForBreakage = (player) => {
 const reload = (src, player) => {
 	player.reset();
 	player.src({src: src, type: 'application/x-mpegURL'});
+	player.play();
 }
 
 const retry = (delay, player) => {
