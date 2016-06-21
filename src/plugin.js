@@ -17,25 +17,27 @@ let errorSentinel = 0; //prevents us from infinite looping, can be customizable
 let maxErrors = 10; //optional value passed in by user for max amount of errors sentinel has to watch out for
 let onLiveError = false; //optional handler passed in by user to handle live broadcast errors
 let retryCount = 0; //this is so that the retry handler has time to cooldown
+let debug = false;
 
 const handleLiveHlsFailure = (player) => {
 	if(retryCount>=4) {	// 5 errors within 10 seconds
-		// console.log('die');
+		logger('max retry count!');
 	}
 	// If time has progressed since last failure, retry
 	else if(lastBrokeAt!=lastCurrentTime) {
-		retry(retryCount*1000, player);
+		retry( (retryCount || 1)*1000, player);
 		errorStrike=1;
+		logger('time has progressed since last failure, retry in ' + ((retryCount || 1) * 1000) + 'seconds');
 	}
 	// If time hasn't progressed, retry once, but also delay for 3 seconds to increase likelihood of success
 	else if(errorStrike<2) {
-		console.log('no progress recover');
+		logger('no progress recover');
 		retry(3000, player);
 		errorStrike=2;
 	}
 	// 3 errors without progressing
 	else {
-		console.log('die');
+		logger('three errors without progressing');
 	}
 };
 
@@ -102,7 +104,13 @@ const retry = (delay, player) => {
 			retryCount--;
 		}, 10000);
 	}, delay>0 ? delay : 0);
-};
+}
+
+const logger = (string) => {
+	if(debug) {
+		console.log(string);
+	}
+}
 
 
 /**
@@ -127,7 +135,7 @@ const onPlayerReady = (player, options) => {
     	if (player.paused() && player.currentTime() === lastCurrentTime) {
     		stuckStuck++;
     		if (stuckStuck >= 5) {
-					// console.log("dang we're stuck: " stuckStuck);
+					logger("Stuckstuck enabled: " stuckStuck);
 					if(player.duration() === Infinity) {
 						retry(0, player);
 					} else {
@@ -172,8 +180,11 @@ const onPlayerReady = (player, options) => {
  * @param    {Object} [options={}]
  * @param    {Number} [maxErrors]
  * @param    {Function} [onLiveError]
+ * @param    {String} [debug]
  *
- *           maxErrors defines the amount of times the player is allowed to fail, optionally set to 10
+ *          maxErrors defines the amount of times the player is allowed to fail, optionally set to 10
+ *					onLiveError defined an optional error handler for live streams
+ *					debug when debugging it's useful to turn this to true, default is false.
  */
 const skippy = function(options) {
   this.ready(() => {
