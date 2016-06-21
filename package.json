@@ -1,6 +1,6 @@
 {
   "name": "videojs-skippy",
-  "version": "0.0.0",
+  "version": "1.0.4",
   "description": "Skip past broken or invalid segments",
   "main": "es5/plugin.js",
   "scripts": {

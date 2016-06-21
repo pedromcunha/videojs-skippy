@@ -1,6 +1,6 @@
 /**
  * videojs-skippy
- * @version 0.0.0
+ * @version 1.0.4
  * @copyright 2016 Pedro <pedro@younow.com>
  * @license MIT
  */
@@ -228,7 +228,7 @@ var skippy = function skippy(options) {
 _videoJs2['default'].plugin('skippy', skippy);
 
 // Include the version number.
-skippy.VERSION = '0.0.0';
+skippy.VERSION = '1.0.4';
 
 exports['default'] = skippy;
 module.exports = exports['default'];
