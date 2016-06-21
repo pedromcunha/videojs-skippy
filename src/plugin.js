@@ -132,7 +132,7 @@ const onPlayerReady = (player, options) => {
     	if (!lastBrokeAt && player.currentTime) {
     		recordedTime = player.currentTime();
     	}
-    	if (player.paused() && player.currentTime() === lastCurrentTime) {
+    	if (!player.paused() && player.currentTime() === lastCurrentTime) {
     		stuckStuck++;
     		if (stuckStuck >= 5) {
 					logger("Stuckstuck enabled: " + stuckStuck);
